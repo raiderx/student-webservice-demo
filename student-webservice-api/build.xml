@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="student-webservice-api" basedir=".">
+
+  <property name="jibx.home" location="/local/var/lib/jibx"/>
+  <property name="axis.home" location="/local/opt/axis2-1.6.1"/>
+  <property name="src.dir" location="src"/>
+  <property name="output.dir" location="target"/>
+  <property name="output.classes.dir" location="${output.dir}/classes"/>
+
+  <path id="classpath">
+    <fileset dir="${jibx.home}/lib" includes="*.jar"/>
+    <pathelement path="${output.classes.dir}"/>
+  </path>
+
+  <target name="clean">
+    <delete dir="${output.dir}/classes"/>
+    <delete dir="${output.dir}/test-classes"/>
+    <delete dir="${output.dir}/bindgen"/>
+    <delete file="${output.dir}/${ant.project.name}.jar"/>
+  </target>
+
+  <target name="compile">
+    <echo message="Compiling..."/>
+    <mkdir dir="${output.classes.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${output.classes.dir}" source="1.6" target="1.6"/>
+  </target>
+
+  <target name="bindgen" depends="compile">
+    <echo message="Running BindGen tool..."/>
+    <java classpathref="classpath" fork="true" failonerror="true" classname="org.jibx.binding.generator.BindGen">
+      <arg line="-c custom.xml"/>
+      <arg line="-s ${src.dir}"/>
+      <arg line="-t ${output.dir}/bindgen"/>
+      <arg value="org.karpukhin.webservice.data.Student"/>
+    </java>
+  </target>
+
+  <target name="bind" depends="bindgen">
+    <echo message="Running binding compiler tool..."/>
+    <taskdef name="bind" classname="org.jibx.binding.ant.CompileTask">
+      <classpath>
+        <fileset dir="${jibx.home}/lib" includes="*.jar"/>
+      </classpath>
+    </taskdef>
+    <bind binding="${output.dir}/bindgen/binding.xml">
+      <classpath refid="classpath"/>
+    </bind>
+  </target>
+
+  <target name="dist" depends="bind">
+    <jar destfile="${output.dir}/${ant.project.name}.jar" basedir="${output.classes.dir}"/>
+    <copy file="${output.dir}/${ant.project.name}.jar" todir="../student-webservice-rest-client/lib"/>
+  </target>
+
+</project>

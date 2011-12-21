@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ivy-module version="2.0">
+  <info organisation="org.karpukhin" module="student-webservice-rest-client"/>
+  <dependencies>
+    <dependency org="junit" name="junit" rev="4.10" conf="*->*,!sources,!javadoc"/>
+    <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.1.2" conf="*->*,!sources,!javadoc"/>
+    <dependency org="org.jibx" name="jibx-run" rev="1.2.3" conf="*->*,!sources,!javadoc"/>
+  </dependencies>
+</ivy-module>

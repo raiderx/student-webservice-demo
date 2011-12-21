@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="student-webservice-rest-client" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <property name="src.dir" location="src"/>
+  <property name="test.dir" location="test"/>
+  <property name="output.dir" location="target"/>
+
+  <path id="classpath">
+    <!--<pathelement path="../asco1-webservice-api/target/asco1-webservice-api.jar"/>-->
+    <pathelement path="${output.dir}/classes"/>
+    <fileset dir="lib" includes="*.jar"/>
+  </path>
+
+  <target name="clean">
+    <delete dir="${output.dir}/classes"/>
+    <delete dir="${output.dir}/test-classes"/>
+  </target>
+
+  <target name="init-ivy">
+    <ivy:retrieve/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${output.dir}/classes"/>
+    <mkdir dir="${output.dir}/test-classes"/>
+    <javac srcdir="${src.dir}" destdir="${output.dir}/classes" classpathref="classpath" source="1.6" target="1.6"/>
+    <javac srcdir="test" destdir="${output.dir}/test-classes" classpathref="classpath" source="1.6" target="1.6"/>
+  </target>
+
+  <target name="test" depends="compile">
+    <junit printsummary="withOutAndErr" fork="yes">
+      <classpath>
+        <pathelement path="${output.dir}/classes"/>
+        <pathelement path="${output.dir}/test-classes"/>
+        <fileset dir="lib" includes="*.jar" excludes="student-webservice-api.jar"/>
+      </classpath>
+      <test name="org.karpukhin.client.StudentServiceStubTest"/>
+    </junit>
+  </target>
+
+  <target name="test2" depends="compile">
+    <java classpathref="classpath" fork="true" failonerror="true" classname="org.junit.runner.JUnitCore">
+      <classpath>
+        <pathelement path="${output.dir}/classes"/>
+        <pathelement path="${output.dir}/test-classes"/>
+        <fileset dir="lib" includes="*.jar" excludes="student-webservice-api.jar"/>
+      </classpath>
+      <arg value="org.karpukhin.client.StudentServiceStubTest"/>
+    </java>
+  </target>
+
+</project>
