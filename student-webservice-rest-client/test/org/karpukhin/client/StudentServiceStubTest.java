@@ -54,4 +54,10 @@ public class StudentServiceStubTest {
         List<Student> result = service.getAllStudents();
         assertNotNull(result);
     }
+
+    @Test
+    public void testSomeMethod() {
+        List<Integer> result = service.someMethod();
+        assertNotNull(result);
+    }
 }

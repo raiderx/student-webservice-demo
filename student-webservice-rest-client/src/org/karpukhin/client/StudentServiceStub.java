@@ -56,7 +56,6 @@ public class StudentServiceStub implements StudentService {
     @Override
     public boolean createStudent(Student student) {
         Map<String, Object> params = new HashMap<String, Object>();
-        //params.put("id", "")
         List<String> result = invokeWithParams("createStudent", params);
         if (!result.isEmpty()) {
             return Boolean.parseBoolean(result.get(0));
@@ -71,7 +70,7 @@ public class StudentServiceStub implements StudentService {
     public Student getStudentById(int id) {
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("args0", id);
-        return invokeWithParams("getStudentById", STUDENT_TYPE, params).get(0);
+        return (Student)invokeWithParams("getStudentById", params).get(0);
     }
 
     /**
@@ -89,9 +88,9 @@ public class StudentServiceStub implements StudentService {
     public boolean deleteStudent(int id) {
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("args0", id);
-        List<String> result = invokeWithParams("deleteStudent", params);
+        List result = invokeWithParams("deleteStudent", params);
         if (!result.isEmpty()) {
-            return Boolean.parseBoolean(result.get(0));
+            return Boolean.parseBoolean(result.get(0).toString());
         }
         return false;
     }
@@ -101,7 +100,12 @@ public class StudentServiceStub implements StudentService {
      */
     @Override
     public List<Student> getAllStudents() {
-        return invoke("getAllStudents", STUDENT_TYPE);
+        return invoke("getAllStudents");
+    }
+
+    @Override
+    public List<Integer> someMethod() {
+        return invoke("someMethod");
     }
 
     private InputStream getStream(String method, Map<String, Object> params) {
@@ -117,7 +121,7 @@ public class StudentServiceStub implements StudentService {
                 uri.append(entry.getKey()).append("=").append(entry.getValue());
             }
         }
-        log.info(uri.toString());
+        log.debug(uri.toString());
         HttpClient httpClient = new DefaultHttpClient();
         HttpGet httpGet = new HttpGet(uri.toString());
         try {
@@ -133,47 +137,32 @@ public class StudentServiceStub implements StudentService {
     }
 
     /**
-     * Invokes remote method with given name and parameters. Returns list of
-     * values extracted from method invocation result.
-     * @param method remote method name
-     * @param params remote method input parameters
-     * @return list of values
-     */
-    private List<String> invokeWithParams(String method, Map<String, Object> params) {
-        InputStream stream = getStream(method, params);
-        return extractValues(stream, method);
-    }
-
-    /**
      * Invokes remote method with given name and result type
      * @param method     remote method name
-     * @param resultType result type
      * @return a list of objects with given result type
      */
-    private List<Student> invoke(String method, String resultType) {
-        return invokeWithParams(method, resultType, null);
+    private List invoke(String method) {
+        return invokeWithParams(method, null);
     }
 
     /**
      * Invokes remote method with given name, result type and input parameters
      * @param method     remote method name
-     * @param resultType result type
      * @param params     remote method input parameters
      * @return a list of objects with given result type
      */
-    private List<Student> invokeWithParams(String method, String resultType, Map<String, Object> params) {
+    private List invokeWithParams(String method, Map<String, Object> params) {
         InputStream stream = getStream(method, params);
-        return extractObjects(stream, method, resultType);
+        return extractObjects(stream, method);
     }
 
     /**
      * Extracts objects from remote method invocation result
      * @param stream     stream with method invocation result
      * @param method     remote method name
-     * @param resultType result type
      * @return list of objects
      */
-    private List extractObjects(InputStream stream, String method, String resultType) {
+    private List extractObjects(InputStream stream, String method) {
         List result = new ArrayList();
         try {
             XMLInputFactory inputFactory = XMLInputFactory.newInstance();
@@ -190,23 +179,32 @@ public class StudentServiceStub implements StudentService {
                 if (context.attributeBoolean("http://www.w3.org/2001/XMLSchema-instance", "nil", false)) {
                     context.skipElement();
                 } else {
-                    String type = context.attributeText("http://www.w3.org/2001/XMLSchema-instance", "type");
+                    String type = context.attributeText("http://www.w3.org/2001/XMLSchema-instance", "type", null);
                     log.debug("Return type: " + type);
-                    log.debug(context.getNamespaceUri(type.split(":")[0]));
-                    try {
-                        Class clazz = map.get(resultType);
-                        assert clazz != null;
-                        Object res = context.getUnmarshaller(resultType).unmarshal(clazz.newInstance(), context);
-                        log.debug(res.toString());
+                    if (type != null) {
+                        String[] typeTokens = type.split(":");
+                        String namespaceUri = context.getNamespaceUri(typeTokens[0]);
+                        log.debug(namespaceUri);
+                        try {
+                            String resultType = String.format("{%s}:%s", namespaceUri, typeTokens[1]);
+                            Class clazz = map.get(resultType);
+                            assert clazz != null;
+                            Object res = context.getUnmarshaller(resultType).unmarshal(clazz.newInstance(), context);
+                            log.debug(res.toString());
+                            result.add(res);
+                        } catch (InstantiationException e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        } catch (IllegalAccessException e) {
+                            log.error(e);
+                            throw new RuntimeException(e);
+                        }
+                        context.parsePastCurrentEndTag(XYZ_XSD_NAMESPACE, "return");
+                    } else {
+                        String res = context.parseElementText(XYZ_XSD_NAMESPACE, "return");
+                        log.debug(res);
                         result.add(res);
-                    } catch (InstantiationException e) {
-                        log.error(e);
-                        throw new RuntimeException(e);
-                    } catch (IllegalAccessException e) {
-                        log.error(e);
-                        throw new RuntimeException(e);
                     }
-                    context.parsePastCurrentEndTag(XYZ_XSD_NAMESPACE, "return");
                 }
             }
         } catch (JiBXException e) {
@@ -217,38 +215,5 @@ public class StudentServiceStub implements StudentService {
             throw new RuntimeException(e);
         }
         return result;
-    }
-
-    /**
-     * Extracts single value from remote method invocation result
-     * @param stream stream with method invocation result
-     * @param method remote method name
-     * @return single value
-     */
-    private List<String> extractValues(InputStream stream, String method) {
-        List<String> result = new ArrayList<String>();
-        try {
-            XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-            XMLStreamReader streamReader = inputFactory.createXMLStreamReader(stream);
-            IXMLReader reader = new StAXReaderWrapper(streamReader, "response", true);
-
-            UnmarshallingContext context = (UnmarshallingContext)factory.createUnmarshallingContext();
-            context.setDocument(reader);
-            context.toTag();
-
-            context.parsePastStartTag(XYZ_XSD_NAMESPACE, method + "Response");
-            while(context.isAt(XYZ_XSD_NAMESPACE, "return")) {
-                String res = context.parseElementText(XYZ_XSD_NAMESPACE, "return");
-                log.debug(res);
-                result.add(res);
-            }
-        } catch (JiBXException e) {
-            log.error(e);
-            throw new RuntimeException(e);
-        } catch (XMLStreamException e) {
-            log.error(e);
-            throw new RuntimeException(e);
-        }
-        return null;
     }
 }
