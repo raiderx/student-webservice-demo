@@ -19,7 +19,7 @@
     <delete file="${output.dir}/${ant.project.name}.jar"/>
   </target>
 
-  <target name="compile">
+  <target name="compile" description="Compile project.">
     <echo message="Compiling..."/>
     <mkdir dir="${output.classes.dir}"/>
     <javac srcdir="${src.dir}" destdir="${output.classes.dir}" source="1.6" target="1.6"/>
@@ -47,7 +47,7 @@
     </bind>
   </target>
 
-  <target name="dist" depends="bind">
+  <target name="jar" description="Build JAR." depends="bind">
     <jar destfile="${output.dir}/${ant.project.name}.jar" basedir="${output.classes.dir}"/>
     <copy file="${output.dir}/${ant.project.name}.jar" todir="../student-webservice-rest-client/lib"/>
   </target>

@@ -42,4 +42,10 @@ public interface StudentService {
      * @return list of students
      */
     List<Student> getAllStudents();
+
+    /**
+     * Some method that returns a list of numbers
+     * @return list of numbers
+     */
+    List<Integer> someMethod();
 }
